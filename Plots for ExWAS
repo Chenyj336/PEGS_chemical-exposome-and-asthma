@@ -1,0 +1,54 @@
+#forest plot to show OR and 95%CI
+#volcano plot to show p value/ p value corrected for multiple testing
+#93 chemicals in 18 groups
+#library(ggplot2)
+#library(ggVolcano)
+
+
+#forest plot
+#to display the variables in order
+data$x <- c(1:93)
+
+#get the labels for the variables names to match x
+var_label <- data$variable
+
+color<- qualitative_hcl(18,palette = "Set 2") #a color set for 18 groups
+
+p4 <- ggplot(data, aes(x = x, y = OR, color = GROUP))+
+  geom_errorbar(aes(ymin = OR_CI_low, ymax = OR_CI_high),
+                position=position_dodge(0.7), width=0.2)+
+  geom_point(position = position_dodge(width =0.7),size = 1.5)+
+  scale_color_manual(values = c(color))+
+  geom_hline(yintercept = 1, linewidth = 0.8,linetype = 2)+
+  scale_x_continuous(breaks = seq(1,50,1),
+                     labels = c(var_label),
+                    expand = expansion(mult = c(0.01,0.01)))+
+  labs(x = "", y = "OR (95%CI)")+ 
+  theme_bw()+
+  theme(axis.text.x=element_text(angle=90,size=8,hjust = 1,vjust =0.5))+
+  theme(axis.ticks.x = element_blank())+
+  theme(panel.grid.minor  =element_blank(),
+        panel.grid.major.x  =element_blank())
+
+
+
+#volcano plot
+#data_vo <- data[, c("OR","p.value","variable")]
+VO1 <- gradual_volcano(data_vo, x = "OR", y = "p.value",
+                       label = "variable", label_number = 5, output =F,
+                       x_lab = "OR", y_lab = "-Log10 P value",
+                       log2FC_cut =1,
+                       add_line = T,
+                       fills =  c("#00AFBB","#FC4E07"),
+                       colors =  c("#00AFBB","#FC4E07"),
+                       FDR_cut = 0.05)#set p value
+VO1 =VO1+theme(axis.text.x = element_text(size = 12, family ="serif"),
+               axis.text.y = element_text(size = 12, family ="serif",face = "bold"),
+               axis.title = element_text(family = "serif", size=12,face = "bold"),
+               legend.text = element_text( size = 12, family ="serif"),
+               legend.key.height = unit(12, "pt"), legend.key.width = unit(12, "pt"))+
+  theme(legend.title = element_text(size = 12,family = "serif",face = "bold"))
+
+
+
+
