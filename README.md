@@ -1,6 +1,7 @@
 # PEGS_chemical-exposome-and-asthma
 
-## Author: Yujing Chen, JC school of public health and primary care, CUHK.
+## Author
+-Yujing Chen, JC school of public health and primary care, CUHK.
 
 ## Getting Started
 - This github repository R codes for analyzing exposome-wide association betwween chemical exposures and asthma.
