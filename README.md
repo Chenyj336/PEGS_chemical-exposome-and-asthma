@@ -1,4 +1,4 @@
-# Exposome-wide associations and polyexposure risks of workplace chemical exposures on adult asthma: The Personalized Environment and Genes Study (PEGS)
+# Exposome-wide associations and polyexposure risks of workplace chemical exposures on adult asthma: The PEGS study
 
 ## Author
 - Yujing Chen, JC school of public health and primary care, CUHK.
