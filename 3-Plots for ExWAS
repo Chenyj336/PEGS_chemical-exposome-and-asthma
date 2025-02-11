@@ -1,18 +1,18 @@
-#forest plot to show OR and 95%CI
-#volcano plot to show p value/ p value corrected for multiple testing
-#93 chemicals in 18 groups
-#library(ggplot2)
-#library(ggVolcano)
+# forest plot to show OR and 95%CI
+# volcano plot to show p value/ p value corrected for multiple testing
+# 93 chemicals in 18 groups
+# library(ggplot2)
+# library(ggVolcano)
 
 
-#forest plot
-#to display the variables in order
+# forest plot
+# to display the variables in order
 data$x <- c(1:93)
 
-#get the labels for the variables names to match x
+# get the labels for the variables names to match x
 var_label <- data$variable
 
-color<- qualitative_hcl(18,palette = "Set 2") #a color set for 18 groups
+color<- qualitative_hcl(18,palette = "Set 2") 
 
 p4 <- ggplot(data, aes(x = x, y = OR, color = GROUP))+
   geom_errorbar(aes(ymin = OR_CI_low, ymax = OR_CI_high),
@@ -32,8 +32,8 @@ p4 <- ggplot(data, aes(x = x, y = OR, color = GROUP))+
 
 
 
-#volcano plot
-#data_vo <- data[, c("OR","p.value","variable")]
+# volcano plot
+# data_vo <- data[, c("OR","p.value","variable")]
 VO1 <- gradual_volcano(data_vo, x = "OR", y = "p.value",
                        label = "variable", label_number = 5, output =F,
                        x_lab = "OR", y_lab = "-Log10 P value",
@@ -41,7 +41,7 @@ VO1 <- gradual_volcano(data_vo, x = "OR", y = "p.value",
                        add_line = T,
                        fills =  c("#00AFBB","#FC4E07"),
                        colors =  c("#00AFBB","#FC4E07"),
-                       FDR_cut = 0.05)#set p value
+                       FDR_cut = 0.05)
 VO1 =VO1+theme(axis.text.x = element_text(size = 12, family ="serif"),
                axis.text.y = element_text(size = 12, family ="serif",face = "bold"),
                axis.title = element_text(family = "serif", size=12,face = "bold"),
