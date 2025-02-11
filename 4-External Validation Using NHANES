@@ -45,16 +45,7 @@ medical1 <- medical%>%
 occupation1 <- occupation%>%
   select(SEQN,OCQ510,OCQ520, OCQ530,OCQ540, OCQ550, OCQ560, OCQ570,OCQ580)%>%
   mutate(min_dust=factor(ifelse(OCQ510=="Yes",1,0)),
-         fume=factor(ifelse(OCQ550=="Yes",1,0)),
-         dust_year=factor(ifelse(min_dust==1 &  OCQ520>=0 &OCQ520<1,1,
-                                 ifelse(min_dust==1 & OCQ520>=1 &OCQ520<5, 2,
-                                 ifelse(min_dust==1 & OCQ520>=5& OCQ520<100, 3,0)))),
-       fume_year=factor(ifelse(fume==1 & OCQ560>=0 &OCQ560<1,1,
-                                 ifelse(fume==1 & OCQ560>=1 &OCQ560<5, 2,
-                                 ifelse(fume==1 & OCQ560>=5& OCQ560<100, 3,0
-                                  )))),
-         dust_year=factor(ifelse(min_dust==1 &dust_year==0,NA,dust_year)),
-         fume_year=factor(ifelse(fume==1 & fume_year==0,NA,fume_year)))
+         fume=factor(ifelse(OCQ550=="Yes",1,0)))
 
 demo <- merge(BMI,demo)  
 demo1<-demo%>%
@@ -91,18 +82,13 @@ dplyr::select(SEQN, min_dust,dust_year,fume,fume_year,AGE,edu,SEX,income,RIDRETH
 
   
 # Combine all cycles
-
 #further add fume_other in analysis, recorded covariates 
 data_all <- rbind(data2007,data2009,data2011)%>%
 mutate(weight=WTINT2YR/3,
        year=factor(year))%>%
   mutate(dust=as.factor(min_dust))%>%
 filter(!is.na(weight))%>%
-  mutate(fume_other=factor(ifelse(OCQ570=="Yes",1,0)),
-         fume_other_year=factor(ifelse(fume_other==1 &  OCQ580>=0
-                                       &OCQ580<1,1,
-                          ifelse(fume_other==1 & OCQ580>=1 &OCQ580<5, 2,
-                          ifelse(fume_other==1 & OCQ580>=5& OCQ580<100, 3,0)))))%>%
+  mutate(fume_other=factor(ifelse(OCQ570=="Yes",1,0)))%>%
 mutate(asthma=ifelse(MCQ010=="Refused" |MCQ010=="Don't know",NA,asthma),
          dust=factor(ifelse(OCQ510=="Refused" |OCQ510=="Don't know",NA,dust)),
          fume=factor(ifelse(OCQ550=="Refused" |OCQ550=="Don't know",NA,fume)),
