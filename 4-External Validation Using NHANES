@@ -142,7 +142,6 @@ data_2007 <- data_all%>%
 data_2009 <- data_all%>%
   filter(year==2009 )
 
-
 data_2011 <- data_all%>%
   filter(year==2011 )
 
@@ -162,7 +161,6 @@ design2011 <- subset(design_all, AGE >= 18 & !is.na(asthma) &!is.na(dust) & !is.
 
 
 ## association 
-## 2007
 mod11 <- svyglm(asthma ~ dust+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
 summary(mod11)
 
@@ -174,15 +172,6 @@ mod13 <- svyglm(asthma ~ fume_other+AGE +edu+ SEX+income+race1+BMI , design = de
 summary(mod13)
 
 
-mod14 <- svyglm(asthma ~ dust_year+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
-summary(mod14)
-
-
-mod15 <- svyglm(asthma ~ fume_year+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
-summary(mod15)
-
-mod16 <- svyglm(asthma ~ fume_other_year+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
-summary(mod16)
 
 
 ## 2009
