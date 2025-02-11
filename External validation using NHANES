@@ -1,0 +1,214 @@
+# library("nhanesA")
+# library("dplyr")
+# library(survey)
+# library("summarytools")
+# We used NHANES for external validation of our ExWAS findings. 
+# A total of 14,174 adults participating in the 2007-2008, 2009-2010, and 2011-2012 survey cycles were included. 
+# We selected comparable occupational chemical exposure groups investigated in NHANES, including mineral dust, exhaust fumes, and other fumes. 
+
+#GET DATA
+# 2011-2012
+nhanesTables('Q', 2011)
+nhanesTableVars('EXAM','BMX_G')
+
+#import data, n=9756
+options(download.file.method = "libcurl")
+medical <- nhanes('MCQ_G')
+occupation <- nhanes('OCQ_G')
+demo<- nhanes('DEMO_G')
+BMI <- nhanes("BMX_G")
+
+# 2009-2010
+medical2 <- nhanes('MCQ_F')
+occupation2 <- nhanes('OCQ_F')
+demo2<- nhanes('DEMO_F')
+BMI2 <- nhanes("BMX_F")
+
+
+# 2007-2008
+medical3 <- nhanes('MCQ_E')
+occupation3 <- nhanes('OCQ_E')
+demo3<- nhanes('DEMO_E')
+BMI3 <- nhanes("BMX_E")
+
+
+# recoded variables
+
+medical1 <- medical%>%
+ select(SEQN,MCQ010, MCQ025, MCQ035, MCQ040, MCQ050, MCQ051)%>%
+  mutate(asthma_age=ifelse(MCQ025>=18, 1, 0),
+         asthma_still=ifelse(MCQ010=="Yes" & MCQ035=="Yes",1,0),
+         asthma_past1y=factor(ifelse(MCQ040=="Yes" | MCQ050 =="Yes" |MCQ051=="Yes" ,1,
+                             asthma_still )),
+         asthma=factor(ifelse(MCQ010=="Yes" & asthma_still,1,0)))
+
+occupation1 <- occupation%>%
+  select(SEQN,OCQ510,OCQ520, OCQ530,OCQ540, OCQ550, OCQ560, OCQ570,OCQ580)%>%
+  mutate(min_dust=factor(ifelse(OCQ510=="Yes",1,0)),
+         fume=factor(ifelse(OCQ550=="Yes",1,0)),
+         dust_year=factor(ifelse(min_dust==1 &  OCQ520>=0 &OCQ520<1,1,
+                                 ifelse(min_dust==1 & OCQ520>=1 &OCQ520<5, 2,
+                                 ifelse(min_dust==1 & OCQ520>=5& OCQ520<100, 3,0)))),
+       fume_year=factor(ifelse(fume==1 & OCQ560>=0 &OCQ560<1,1,
+                                 ifelse(fume==1 & OCQ560>=1 &OCQ560<5, 2,
+                                 ifelse(fume==1 & OCQ560>=5& OCQ560<100, 3,0
+                                  )))),
+         dust_year=factor(ifelse(min_dust==1 &dust_year==0,NA,dust_year)),
+         fume_year=factor(ifelse(fume==1 & fume_year==0,NA,fume_year)))
+
+demo <- merge(BMI,demo)  
+demo1<-demo%>%
+  select(SEQN,RIAGENDR,RIDAGEYR , RIDRETH1 , DMDEDUC3, DMDEDUC2, INDHHIN2,BMXBMI,
+         WTINT2YR,WTMEC2YR, SDMVPSU,SDMVSTRA)%>%
+  mutate(BMI=BMXBMI,
+         AGE=RIDAGEYR,
+         SEX=RIAGENDR)%>%
+  mutate(edu=ifelse(is.na(DMDEDUC2),1 ,DMDEDUC2),
+         edu=factor(ifelse(edu=="6" | edu=="7", NA, ifelse(
+           edu==1,2,edu) )),
+         income=factor(ifelse(INDHHIN2=="$ 0 to $ 4,999" | INDHHIN2=="$ 5,000 to $ 9,999"
+                              |INDHHIN2=="$10,000 to $14,999" |INDHHIN2=="$15,000 to $19,999" 
+                              |INDHHIN2=="Under $20,000", 1,
+                       ifelse(INDHHIN2=="$20,000 to $24,999" |INDHHIN2=="$25,000 to $34,999"
+                              |INDHHIN2=="$35,000 to $44,999",2,
+                       ifelse(INDHHIN2=="$45,000 to $54,999"|INDHHIN2=="$55,000 to $64,999"
+                              |INDHHIN2=="$65,000 to $74,999"|INDHHIN2=="$75,000 to $99,999", 3,
+                              ifelse(INDHHIN2=="$100,000 and Over",4,NA))))))
+
+
+dat <- full_join(medical21, occupation21, by="SEQN")
+data2009 <- right_join(dat,demo21, by="SEQN")%>%
+  mutate(year=2009)%>% 
+dplyr::select(SEQN, min_dust,dust_year,fume,fume_year,AGE,edu,SEX,income,RIDRETH1,BMI,SDMVPSU,SDMVSTRA,WTINT2YR,WTMEC2YR,asthma,year)
+  
+
+#...same for another two cycles
+
+
+
+
+
+
+  
+# Combine all cycles
+
+#further add fume_other in analysis, recorded covariates 
+data_all <- rbind(data2007,data2009,data2011)%>%
+mutate(weight=WTINT2YR/3,
+       year=factor(year))%>%
+  mutate(dust=as.factor(min_dust))%>%
+filter(!is.na(weight))%>%
+  mutate(fume_other=factor(ifelse(OCQ570=="Yes",1,0)),
+         fume_other_year=factor(ifelse(fume_other==1 &  OCQ580>=0
+                                       &OCQ580<1,1,
+                          ifelse(fume_other==1 & OCQ580>=1 &OCQ580<5, 2,
+                          ifelse(fume_other==1 & OCQ580>=5& OCQ580<100, 3,0)))))%>%
+mutate(asthma=ifelse(MCQ010=="Refused" |MCQ010=="Don't know",NA,asthma),
+         dust=factor(ifelse(OCQ510=="Refused" |OCQ510=="Don't know",NA,dust)),
+         fume=factor(ifelse(OCQ550=="Refused" |OCQ550=="Don't know",NA,fume)),
+         fume_other=factor(ifelse(OCQ570=="Refused" |OCQ570=="Don't know",NA,fume_other)),
+         SEX=ifelse(SEX=="Female",1,0),
+         race=ifelse(RIDRETH1=="Mexican American",1,RIDRETH1),
+       race1=ifelse(race==1,1, ifelse(race==2| race==5,2,
+                    race)))
+
+
+categorical_vars <- c( "SEX", "race1","income","edu","asthma","dust","dust_year",
+                       "fume","fume_year","fume_other","fume_other_year")
+data_all[categorical_vars] <- lapply(data_all[categorical_vars], factor)
+
+design_all <- svydesign(data=data_all, id=~SDMVPSU, strata=~SDMVSTRA, weights=~weight, nest=TRUE)
+design <- subset(design_all, AGE >= 18 & !is.na(asthma) &!is.na(dust) & !is.na(fume)& !is.na(fume_other) &!is.na(AGE) &!is.na(edu)&!is.na(SEX)
+                 &!is.na(income) &!is.na(race1) &!is.na(BMI) )
+
+
+
+## association 
+
+mod1 <- svyglm(asthma ~ dust+AGE +edu+ SEX+income+race1+BMI+year, design = design, family = stats::quasibinomial(link = "logit"))
+summary(mod1)
+
+mod2 <- svyglm(asthma ~ fume+AGE +edu+ SEX+income+race1+BMI+year, design = design, family = stats::quasibinomial(link = "logit"))
+summary(mod2)
+
+mod3 <- svyglm(asthma ~ fume_other+AGE +edu+ SEX+income+race1+BMI+year, design = design, family = stats::quasibinomial(link = "logit"))
+summary(mod3)
+
+
+# individual cycle 
+data_2007 <- data_all%>%
+  filter(year==2007 )
+
+data_2009 <- data_all%>%
+  filter(year==2009 )
+
+
+data_2011 <- data_all%>%
+  filter(year==2011 )
+
+design_all <- svydesign(data=data_2007, id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTINT2YR, nest=TRUE)
+design2007 <- subset(design_all, AGE >= 18 & !is.na(asthma) &!is.na(dust) & !is.na(fume)& !is.na(fume_other) &!is.na(AGE) &!is.na(edu)&!is.na(SEX)
+                 &!is.na(income) &!is.na(race1) &!is.na(BMI) )
+
+
+design_all <- svydesign(data=data_2009, id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTINT2YR, nest=TRUE)
+design2009 <- subset(design_all, AGE >= 18 & !is.na(asthma) &!is.na(dust) & !is.na(fume)& !is.na(fume_other) &!is.na(AGE) &!is.na(edu)&!is.na(SEX)
+                 &!is.na(income) &!is.na(race1) &!is.na(BMI) )
+
+
+design_all <- svydesign(data=data_2011, id=~SDMVPSU, strata=~SDMVSTRA, weights=~WTINT2YR, nest=TRUE)
+design2011 <- subset(design_all, AGE >= 18 & !is.na(asthma) &!is.na(dust) & !is.na(fume)& !is.na(fume_other) &!is.na(AGE) &!is.na(edu)&!is.na(SEX)
+                 &!is.na(income) &!is.na(race1) &!is.na(BMI) )
+
+
+## association 
+## 2007
+mod11 <- svyglm(asthma ~ dust+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
+summary(mod11)
+
+
+mod12 <- svyglm(asthma ~ fume+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
+summary(mod12)
+
+mod13 <- svyglm(asthma ~ fume_other+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
+summary(mod13)
+
+
+mod14 <- svyglm(asthma ~ dust_year+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
+summary(mod14)
+
+
+mod15 <- svyglm(asthma ~ fume_year+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
+summary(mod15)
+
+mod16 <- svyglm(asthma ~ fume_other_year+AGE +edu+ SEX+income+race1+BMI , design = design2007, family = stats::quasibinomial(link = "logit"))
+summary(mod16)
+
+
+## 2009
+mod21 <- svyglm(asthma ~ dust+AGE +edu+ SEX+income+race1+BMI , design = design2009, family = stats::quasibinomial(link = "logit"))
+summary(mod21)
+confint(mod21)
+
+mod22 <- svyglm(asthma ~ fume+AGE +edu+ SEX+income+race1+BMI , design = design2009, family = stats::quasibinomial(link = "logit"))
+summary(mod2)
+
+mod23 <- svyglm(asthma ~ fume_other+AGE +edu+ SEX+income+race1+BMI , design = design2009, family = stats::quasibinomial(link = "logit"))
+summary(mod3)
+
+
+
+## 2011
+
+mod31 <- svyglm(asthma ~ dust+AGE +edu+ SEX+income+race1+BMI , design = design2011, family = stats::quasibinomial(link = "logit"))
+summary(mod1)
+
+
+mod32 <- svyglm(asthma ~ fume+AGE +edu+ SEX+income+race1+BMI , design = design2011, family = stats::quasibinomial(link = "logit"))
+summary(mod2)
+
+mod33 <- svyglm(asthma ~ fume_other+AGE +edu+ SEX+income+race1+BMI , design = design2011, family = stats::quasibinomial(link = "logit"))
+summary(mod3)
+
+
+
