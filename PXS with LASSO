@@ -1,0 +1,115 @@
+## library(glmnet) for lasso 
+## library(multcomp) for interaction 
+## library(pROC) 
+## dataset: asth_chem #include ID, outcome, covariates, and chemical exposures
+
+
+# check the best FDR cut-off of EXWAS 
+cut_off_values <- seq(0.05, 0.5, by = 0.05)
+results <- data.frame(cut_off = numeric(), AUC = numeric())
+
+set.seed(2024)  
+train_index <- sample(seq_len(nrow(asth_chem)), size = 0.8 * nrow(asth_chem))
+
+train_data <- asth_chem[train_index, ]
+test_data <- asth_chem[-train_index, ]
+
+for (cut_off in cut_off_values) {
+
+  selected_vars <- results_chem_ad2$variable[results_chem_ad2$FDR < cut_off]
+  
+  sub_chem <- asth_chem%>%
+  select(current_asth2, selected_vars, covariate_variable )
+  bc <- na.omit(sub_chem)
+
+# LASSO model
+y<-as.matrix(bc$current_asth2)#outcome
+x<-as.matrix(bc[,-1])#exposures
+
+  set.seed(2024)
+  cv_fit <- cv.glmnet(x,y, family="binomial", alpha = 1)#k-fold=10,default
+  
+  #select best lambda and predict asthma
+  best_lambda <- cv_fit$lambda.min
+  min_cvm <- min(cv_fit$cvm)
+  best_fit <- glmnet(x, y, family = "binomial", alpha = 1, lambda = best_lambda)
+  
+# get AUC
+sub_chem <- test_data%>%
+select(current_asth2, selected_vars )
+bc <- na.omit(sub_chem)
+
+y1<-as.matrix(bc$current_asth2)
+x1<-as.matrix(bc[,-1])
+  
+  pred <- predict(best_fit, x, type = "response")
+  roc_obj <- roc(y, as.vector(pred))
+  auc_value <- auc(roc_obj)
+  
+ # save results  
+  results <- rbind(results, data.frame(cut_off = cut_off, best_lambda = best_lambda,cvm=min_cvm, AUC = auc_value))
+}
+
+#find maximal AUC and cut-off of FDR
+best_cut_off <- results$cut_off[which.max(results$AUC)]
+best_AUC <- max(results$AUC)
+
+
+
+
+
+# risk score for knwon asthmagen
+data <- asth_chem #include ID, outcome, covariates, and X with FDR<0.20
+
+bc <- na.omit(data)
+y<-as.matrix(bc[,2])
+x<-as.matrix(bc[,c(3:14)])
+
+#lasso regression 
+set.seed(2024)
+f1 = glmnet(x, y, family="binomial", nlambda=100, alpha=1)
+summary(f1)
+cvfit=cv.glmnet(x,y, family="binomial", alpha = 1)#k-fold=10,default
+best_lambda <- cvfit$lambda.min#
+l.coef<-coef(cvfit$glmnet.fit,s=best_lambda,exact = F)
+
+#weight for each exposure
+a <- l.coef[8:11]#choose X
+sum <-sum(a)
+bleach_w <-a[1] /sum
+ammonia_w <-a[2] /sum 
+resin_w <- a[3] /sum 
+nickel_w <- a[4] /sum 
+
+asth_chem <-asth_chem%>%
+  mutate(score_know=(ea_b104a_bleach_PARQ*bleach_w+
+         ea_b104b_ammonia_PARQ*ammonia_w+
+          ea_b164c_resin_PARQ*resin_w+
+         ea_b110g_nickel_PARQ*nickel_w
+           )%>%
+  mutate(score_know=score_know*10)
+
+quantile <- quantile(asth_chem$score_know, 0.9, na.rm=T)
+asth_chem$high_risk_know <- ifelse(asth_chem$score_know>quantile,1,0)
+
+
+# risk score for suspected  asthmagen, use the same method above...
+
+
+
+
+# interaction
+# know score*protective measures, take gloves as an example
+fit_1 <-  glm(asthma~ score_know*ea_b200_gloves_chem_PARQ+sex+race_c+highest_edu+he_t203_income+he_bmi_derived+he_age_derived, data=asth_chem,  family=binomial())
+summary(fit_1)  
+
+# caculate the effect of X in the other stratum of protective measures(ea_b200_gloves_chem_PARQ="Yes")
+a1 <- glht(fit_1,linfct=c("score_know+score_know:ea_b200_gloves_chem_PARQ1=0"))
+summary(a1)
+confint(a1)
+
+
+
+
+
+
