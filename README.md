@@ -8,7 +8,7 @@
 - PEGS data set can be derived from https://www.niehs.nih.gov/research/clinical/studies/pegs/index.cfm
   
 ## Abstract
-- **Background**: Employed an exposome-wide association study (ExWAS) approach to systematically explore occupational chemical exposures and estimate their combined risk for adult asthma and related multimorbidity. 
+- **Background**: Employed an exposome-wide association study (ExWAS) approach to systematically explore occupational chemical exposures and estimate their combined risk for adult asthma. 
 
 - **Methods**: This cross-sectional study included 3148 adults from a North Carolina-based cohort _PEGS. Logistic regression-based ExWAS analyzed associations for individual chemicals. Weighted standardized polyexposure scores (PXSs) were further developed for predefined known asthmagens (PXS known) and suspected or novel risk agents (PXS suspected or novel), selected through a LASSO regression.
 
