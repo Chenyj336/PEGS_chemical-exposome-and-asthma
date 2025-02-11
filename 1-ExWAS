@@ -1,16 +1,15 @@
-#data, dataset 
-#outcome, "asthma"
-#exposures, colnames of exposure variables 
-#covariates, colnames of covariate
-#library(broom)
-#library(dplyr)
+# data, dataset 
+# outcome, "asthma"
+# exposures, colnames of exposure variables 
+# covariates, colnames of covariate
+# library(broom)
+# library(dplyr)
 
 exwas <- function(data,outcome,exposures,covariate){
  
    results_all<- data.frame()
  
   for (variable in exposures) {
-   
     formula <- as.formula(paste(outcome, "~", variable, "+", 
                                 paste(covariate, collapse = " + ")))
     model <- glm(formula, data = data, family = "binomial")
@@ -19,8 +18,6 @@ exwas <- function(data,outcome,exposures,covariate){
     results <- tidy_results %>%
     dplyr::select(term, estimate, std.error, statistic, p.value)
     
-
-    # add name of exposures, n, and 95%CI to the results data frame
     results$variable <- variable
     results$obs <- nobs(model)
     
@@ -32,12 +29,9 @@ exwas <- function(data,outcome,exposures,covariate){
     results$OR_CI_low <- exp(results$conf.low)
     results$OR_CI_high <- exp(results$conf.high)
     
-    # add up all the results for every exposure
     results_all <- bind_rows(results_all, results)%>%
       dplyr::select(term,variable,obs,OR,OR_CI_low,OR_CI_high,p.value)
-  }
-  
-  #remove results for intercept 
+  } 
   results_all <- results_all %>%
     filter(term != "(Intercept)")
 
