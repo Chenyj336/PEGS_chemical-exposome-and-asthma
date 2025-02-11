@@ -4,7 +4,7 @@
 ## dataset: asth_chem #include ID, outcome, covariates, and chemical exposures
 
 
-# check the best FDR cut-off of EXWAS 
+# check the best FDR cut-off of variables included in LASSO regression 
 cut_off_values <- seq(0.05, 0.5, by = 0.05)
 results <- data.frame(cut_off = numeric(), AUC = numeric())
 
@@ -46,14 +46,12 @@ x1<-as.matrix(bc[,-1])
   roc_obj <- roc(y, as.vector(pred))
   auc_value <- auc(roc_obj)
   
- # save results  
   results <- rbind(results, data.frame(cut_off = cut_off, best_lambda = best_lambda,cvm=min_cvm, AUC = auc_value))
 }
 
-#find maximal AUC and cut-off of FDR
+# find maximal AUC and cut-off of FDR
 best_cut_off <- results$cut_off[which.max(results$AUC)]
 best_AUC <- max(results$AUC)
-
 
 
 
@@ -65,7 +63,7 @@ bc <- na.omit(data)
 y<-as.matrix(bc[,2])
 x<-as.matrix(bc[,c(3:14)])
 
-#lasso regression 
+# lasso regression 
 set.seed(2024)
 f1 = glmnet(x, y, family="binomial", nlambda=100, alpha=1)
 summary(f1)
@@ -73,7 +71,7 @@ cvfit=cv.glmnet(x,y, family="binomial", alpha = 1)#k-fold=10,default
 best_lambda <- cvfit$lambda.min#
 l.coef<-coef(cvfit$glmnet.fit,s=best_lambda,exact = F)
 
-#weight for each exposure
+# weight for each exposure
 a <- l.coef[8:11]#choose X
 sum <-sum(a)
 bleach_w <-a[1] /sum
@@ -93,17 +91,12 @@ quantile <- quantile(asth_chem$score_know, 0.9, na.rm=T)
 asth_chem$high_risk_know <- ifelse(asth_chem$score_know>quantile,1,0)
 
 
-# risk score for suspected  asthmagen, use the same method above...
-
-
-
-
 # interaction
 # know score*protective measures, take gloves as an example
 fit_1 <-  glm(asthma~ score_know*ea_b200_gloves_chem_PARQ+sex+race_c+highest_edu+he_t203_income+he_bmi_derived+he_age_derived, data=asth_chem,  family=binomial())
 summary(fit_1)  
 
-# caculate the effect of X in the other stratum of protective measures(ea_b200_gloves_chem_PARQ="Yes")
+# caculate the effect of exposure in the other stratum 
 a1 <- glht(fit_1,linfct=c("score_know+score_know:ea_b200_gloves_chem_PARQ1=0"))
 summary(a1)
 confint(a1)
